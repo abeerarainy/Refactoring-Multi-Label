@@ -1,0 +1,33 @@
+import pandas as pd
+
+
+file_path = r"C:\Users\HP\Dropbox\PHD\level 2\SWE620\project\Fdroid\variable\Fdroid_type3_reduced2.csv"
+df = pd.read_csv(file_path)
+
+
+refactoring_labels = df['refactoring'].unique()
+
+
+for label in refactoring_labels:
+    df[label] = 0
+
+#  Group by 'className', then 'fullMethodName', then 'variableName'
+grouped_df = df.groupby(['className', 'fullMethodName', 'variableName']).agg({
+    **{col: 'max' for col in df.columns if col not in ['className', 'fullMethodName', 'variableName', 'refactoring']},
+    'refactoring': lambda x: list(x)  # Keep refactoring types as a list for multi-label conversion
+}).reset_index()
+
+#  Convert refactoring occurrences to multi-label format
+for index, row in grouped_df.iterrows():
+    # Iterate through the list of refactoring types and set 1 in respective columns
+    for label in row['refactoring']:
+        grouped_df.at[index, label] = 1
+
+#  Drop the original refactoring column (no longer needed after one-hot conversion)
+grouped_df = grouped_df.drop(columns=['refactoring'])
+
+#  Save the processed dataset
+output_file_path = r"C:\Users\HP\Dropbox\PHD\level 2\SWE620\project\Fdroid\variable\multi_label_no_balance_grouped.csv"
+grouped_df.to_csv(output_file_path, index=False)
+
+print(f"Processed dataset saved to: {output_file_path}")
